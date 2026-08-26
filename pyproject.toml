@@ -1,0 +1,114 @@
+[project]
+name = "smt-sudoku-mcp"
+version = "0.1.0"
+description = "An MCP server to work with Sudoku puzzles using satisfiability modulo theories (SMT)"
+readme = "README.md"
+authors = [
+    { name = "Anirban Basu", email = "anirbanbasu@users.noreply.github.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "environs>=15.1.0",
+    "fastmcp==4.0.0b3",
+    "z3-solver>=5.1.0.0",
+]
+
+[project.scripts]
+smt-sudoku-mcp = "smt_sudoku_mcp:main"
+
+[build-system]
+requires = ["uv_build>=0.12.5,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "icecream>=2.2.0",
+    "ruff>=0.16.4",
+    "ty>=0.0.75",
+]
+test = [
+    "coverage>=7.15.4",
+    "pytest>=9.1.1",
+]
+
+[tool.ty.rules]
+possibly-unresolved-reference = "warn"
+# Keyword argument expansion is not supported by ty yet? https://github.com/astral-sh/ty/issues/247
+invalid-argument-type = "ignore"
+
+[tool.ty.environment]
+python-version = "3.13"
+
+[tool.ruff]
+line-length = 120
+target-version = "py313"
+include = [
+    "src/smt_sudoku_mcp/**/*.py",
+    "tests/**/*.py",
+    "docs/**/*.py",
+]
+
+[tool.ruff.lint]
+extend-select = [
+    "Q",
+    "RUF100",
+    "RUF018", # https://docs.astral.sh/ruff/rules/assignment-in-assert/
+    "C90",
+    "UP",
+    "I",
+    "D",
+    "TID251",
+]
+# flake8-quotes = { inline-quotes = "single", multiline-quotes = "double" }
+mccabe = { max-complexity = 15 }
+ignore = [
+    "D100", # ignore missing docstring in module
+    "D102", # ignore missing docstring in public method
+    "D104", # ignore missing docstring in public package
+    "D105", # ignore missing docstring in magic methods
+    "D107", # ignore missing docstring in __init__ methods
+]
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+known-first-party = ["smt-sudoku-mcp"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.format]
+# don't format python in docstrings, pytest-examples takes care of it
+docstring-code-format = false
+# quote-style = "single"
+
+[tool.coverage.run]
+omit = [
+    "tests/*", # Excludes all files and subdirectories within a 'tests' directory at the project root
+]
+
+[tool.coverage.report]
+fail_under = 100
+skip_covered = true
+show_missing = true
+ignore_errors = true
+precision = 2
+exclude_lines = [
+    # `# pragma: no cover` is standard marker for code that's not covered, this will error if code is covered
+    'pragma: no cover',
+    # use `# pragma: lax no cover` if you want to ignore cases where (some of) the code is covered
+    'pragma: lax no cover',
+    'raise NotImplementedError',
+    'if TYPE_CHECKING:',
+    'if typing.TYPE_CHECKING:',
+    '@overload',
+    '@deprecated',
+    '@typing.overload',
+    '@abstractmethod',
+    '\(Protocol\):$',
+    'typing.assert_never',
+    '$\s*assert_never\(',
+    'if __name__ == .__main__.:',
+    'except ImportError as _import_error:',
+    '$\s*pass$',
+    'assert False',
+]
