@@ -1,4 +1,4 @@
-[![Python 3.13+](https://img.shields.io/badge/python-3.13+-blue?logo=python&logoColor=3776ab&labelColor=e4e4e4)](https://www.python.org/downloads/release/python-3130/) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.13+](https://img.shields.io/badge/python-3.13+-blue?logo=python&logoColor=3776ab&labelColor=e4e4e4)](https://www.python.org/downloads/release/python-3130/) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![pytest](https://github.com/anirbanbasu/smt-sudoku-mcp/actions/workflows/uv-pytest-coverage.yml/badge.svg)](https://github.com/anirbanbasu/smt-sudoku-mcp/actions/workflows/uv-pytest-coverage.yml)
 
 # smt-sudoku-mcp
 
