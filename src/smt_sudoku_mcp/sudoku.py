@@ -8,20 +8,24 @@ import random
 from typing import Literal
 
 import z3
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, computed_field, model_validator
 
 GRID_SIZE = 9
 BOX_SIZE = 3
 EMPTY = 0
 
-DifficultyName = Literal["easy", "medium", "hard"]
+DifficultyName = Literal["very easy", "easy", "medium", "hard", "very hard"]
 
 # Approximate clue counts; generation stops at or above the target, not necessarily exactly on it,
-# since a further removal may break the puzzle's unique-solution property.
+# since a further removal may break the puzzle's unique-solution property. "very hard"'s target of
+# 21 sits safely above the proven minimum of 17 givens for any uniquely-solvable Sudoku puzzle, so it
+# stays reachable rather than always flooring out below its nominal target.
 _DIFFICULTY_TARGET_GIVENS: dict[DifficultyName, int] = {
-    "easy": 40,
-    "medium": 32,
-    "hard": 24,
+    "very easy": 63,
+    "easy": 51,
+    "medium": 42,
+    "hard": 30,
+    "very hard": 21,
 }
 
 
@@ -43,8 +47,8 @@ class SudokuGrid(BaseModel):
         return self
 
 
-class CellConflict(BaseModel):
-    """A single cell involved in a Sudoku rule violation.
+class Cell(BaseModel):
+    """A single cell's position.
 
     row and col are 1-indexed, matching how Sudoku cells are conventionally described in text,
     rather than the 0-indexed positions used internally.
@@ -65,20 +69,34 @@ class GeneratePuzzleResult(BaseModel):
 class ValidatePartialResult(BaseModel):
     """Result of validating a partially-filled grid."""
 
-    has_conflicts: bool
-    conflicts: list[CellConflict]
+    conflicts: list[Cell]
     is_completable: bool | None = Field(
         description="Whether the grid can still be completed; None when has_conflicts is True, "
         "since completability is not a meaningful question until conflicts are resolved"
     )
+    empty_cells: list[Cell] = Field(description="Every still-empty cell in the grid, regardless of has_conflicts")
+
+    @computed_field
+    @property
+    def has_conflicts(self) -> bool:
+        return bool(self.conflicts)
+
+    @computed_field(description="Number of still-empty cells, i.e. len(empty_cells)")
+    @property
+    def empty_cells_count(self) -> int:
+        return len(self.empty_cells)
 
 
 class ValidateFullResult(BaseModel):
     """Result of validating a fully-filled grid."""
 
-    is_valid: bool
     has_empty_cells: bool
-    conflicts: list[CellConflict]
+    conflicts: list[Cell]
+
+    @computed_field
+    @property
+    def is_valid(self) -> bool:
+        return not self.has_empty_cells and not self.conflicts
 
 
 class SolvePuzzleResult(BaseModel):
@@ -86,21 +104,27 @@ class SolvePuzzleResult(BaseModel):
 
     status: Literal["satisfiable", "conflicting_givens", "unsatisfiable"]
     solution: SudokuGrid | None
-    conflicts: list[CellConflict] = Field(description="Populated only when status is conflicting_givens")
+    conflicts: list[Cell] = Field(description="Populated only when status is conflicting_givens")
 
 
 def _box_cells(box_row: int, box_col: int) -> list[tuple[int, int]]:
+    """Return the 9 (row, col) coordinates of the 3x3 box at box position (box_row, box_col), each 0-2."""
     return [(box_row * BOX_SIZE + r, box_col * BOX_SIZE + c) for r in range(BOX_SIZE) for c in range(BOX_SIZE)]
 
 
 def _all_units() -> list[list[tuple[int, int]]]:
+    """Return every row, column, and box as a list of its 9 (row, col) coordinates.
+
+    A "unit" is Sudoku terminology for any group of 9 cells that must all hold distinct digits.
+    Every cell belongs to exactly three units: one row, one column, and one box.
+    """
     rows = [[(r, c) for c in range(GRID_SIZE)] for r in range(GRID_SIZE)]
     cols = [[(r, c) for r in range(GRID_SIZE)] for c in range(GRID_SIZE)]
     boxes = [_box_cells(box_row, box_col) for box_row in range(BOX_SIZE) for box_col in range(BOX_SIZE)]
     return rows + cols + boxes
 
 
-def _find_conflicts(rows: list[list[int]]) -> list[CellConflict]:
+def _find_conflicts(rows: list[list[int]]) -> list[Cell]:
     """Return every cell that shares its non-zero value with another cell in the same row, column, or box."""
     conflicting: set[tuple[int, int]] = set()
     for unit in _all_units():
@@ -114,19 +138,35 @@ def _find_conflicts(rows: list[list[int]]) -> list[CellConflict]:
                 conflicting.add((r, c))
             else:
                 seen[value] = (r, c)
-    return [CellConflict(row=r + 1, col=c + 1) for r, c in sorted(conflicting)]
+    return [Cell(row=r + 1, col=c + 1) for r, c in sorted(conflicting)]
+
+
+def _find_empty_cells(rows: list[list[int]]) -> list[Cell]:
+    """Return every still-empty cell in the grid."""
+    return [Cell(row=r + 1, col=c + 1) for r in range(GRID_SIZE) for c in range(GRID_SIZE) if rows[r][c] == EMPTY]
 
 
 def _build_constraints() -> tuple[list[list[z3.ArithRef]], list[z3.BoolRef]]:
+    """Build the SMT encoding of the Sudoku rules, independent of any puzzle's specific givens.
+
+    This is the entire "rules of Sudoku" translated into SMT: one integer variable per cell, plus
+    two families of constraints over those variables. Callers layer puzzle-specific constraints
+    (the fixed given values) on top by adding `cells[r][c] == value` for each known cell.
+    """
     cells = [[z3.Int(f"cell_{r}_{c}") for c in range(GRID_SIZE)] for r in range(GRID_SIZE)]
+    # Domain constraints: every cell must hold a digit 1-9. z3.Int is unbounded, so this range
+    # isn't implied by the variable's declared type the way it would be with a fixed-width type.
     constraints: list[z3.BoolRef] = [
         z3.And(cells[r][c] >= 1, cells[r][c] <= 9) for r in range(GRID_SIZE) for c in range(GRID_SIZE)
     ]
+    # All-different constraints: within every row, column, and box, no two cells may share a value.
+    # z3.Distinct is a single constraint over N variables, rather than N choose 2 pairwise `!=`s.
     constraints.extend(z3.Distinct([cells[r][c] for r, c in unit]) for unit in _all_units())
     return cells, constraints
 
 
 def _model_to_rows(model: z3.ModelRef, cells: list[list[z3.ArithRef]]) -> list[list[int]]:
+    """Read the solved integer value out of each cell variable, in a satisfying model."""
     return [[model.eval(cells[r][c]).as_long() for c in range(GRID_SIZE)] for r in range(GRID_SIZE)]
 
 
@@ -193,19 +233,18 @@ def generate_puzzle(difficulty: DifficultyName = "medium", *, rng: random.Random
 def validate_partial(grid: SudokuGrid) -> ValidatePartialResult:
     """Check whether a partially-filled grid is conflict-free and, if so, still completable."""
     conflicts = _find_conflicts(grid.rows)
+    empty_cells = _find_empty_cells(grid.rows)
     if conflicts:
-        return ValidatePartialResult(has_conflicts=True, conflicts=conflicts, is_completable=None)
+        return ValidatePartialResult(conflicts=conflicts, is_completable=None, empty_cells=empty_cells)
     is_completable = _solve(grid.rows) is not None
-    return ValidatePartialResult(has_conflicts=False, conflicts=[], is_completable=is_completable)
+    return ValidatePartialResult(conflicts=[], is_completable=is_completable, empty_cells=empty_cells)
 
 
 def validate_full(grid: SudokuGrid) -> ValidateFullResult:
     """Check whether a fully-filled grid is a correct Sudoku solution."""
     has_empty_cells = any(value == EMPTY for row in grid.rows for value in row)
     conflicts = _find_conflicts(grid.rows)
-    return ValidateFullResult(
-        is_valid=not has_empty_cells and not conflicts, has_empty_cells=has_empty_cells, conflicts=conflicts
-    )
+    return ValidateFullResult(has_empty_cells=has_empty_cells, conflicts=conflicts)
 
 
 def solve_puzzle(grid: SudokuGrid) -> SolvePuzzleResult:

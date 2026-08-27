@@ -36,7 +36,7 @@ Ruff (line length 120, Google-style docstrings, isort, pyupgrade, complexity ≤
 
 ### Core logic (`sudoku.py`)
 
-`src/smt_sudoku_mcp/sudoku.py` holds the `SudokuGrid`/`CellConflict`/result Pydantic models and all Z3 encoding, generation, validation, and solving logic. It has no FastMCP import at all, so it can be exercised directly in tests without going through the MCP protocol. Cell coordinates are 0-indexed internally (`rows[r][c]`), but any output field that names a specific cell (e.g. `CellConflict`) reports 1-indexed `row`/`col`, matching how Sudoku cells are conventionally described in text.
+`src/smt_sudoku_mcp/sudoku.py` holds the `SudokuGrid`/`Cell`/result Pydantic models and all Z3 encoding, generation, validation, and solving logic. It has no FastMCP import at all, so it can be exercised directly in tests without going through the MCP protocol. Cell coordinates are 0-indexed internally (`rows[r][c]`), but any output field that names a specific cell (e.g. `Cell`) reports 1-indexed `row`/`col`, matching how Sudoku cells are conventionally described in text.
 
 Z3 solving uses `z3.SolverFor("QF_FD")`, not the generic `z3.Solver()` — the finite-domain tactic is roughly two orders of magnitude faster for this kind of small-domain CSP; the generic tactic took tens of seconds on a single grid in testing, where QF_FD takes tens of milliseconds. Always go through `_new_solver()` rather than instantiating `z3.Solver()` directly.
 

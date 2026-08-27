@@ -24,7 +24,7 @@ A Sudoku grid is represented as `{"rows": [[...9 ints...], ...9 rows...]}`, wher
 
 Generates a new, uniquely-solvable Sudoku puzzle.
 
-- **Input:** `difficulty` — one of `"easy"`, `"medium"`, or `"hard"` (default `"medium"`), mapping to an approximate target clue count.
+- **Input:** `difficulty` — one of `"very easy"`, `"easy"`, `"medium"`, `"hard"`, or `"very hard"` (default `"medium"`), mapping to an approximate target clue count.
 - **Output:** `{"puzzle": <grid>, "difficulty": <str>, "givens": <int>}` — `givens` is the actual number of filled cells, which may be slightly above the target if removing further cells would have broken uniqueness.
 
 ### `validate_partial_sudoku_solution`
@@ -32,14 +32,14 @@ Generates a new, uniquely-solvable Sudoku puzzle.
 Checks whether a partially-filled grid is conflict-free and, if so, whether it can still be completed.
 
 - **Input:** `grid` — a partial grid (0 for empty cells).
-- **Output:** `{"has_conflicts": <bool>, "conflicts": [<cell>, ...], "is_completable": <bool | null>}` — `is_completable` is `null` when conflicts are present, since completability is not a meaningful question until they are resolved.
+- **Output:** `{"conflicts": [<cell>, ...], "is_completable": <bool | null>, "empty_cells": [<cell>, ...], "has_conflicts": <bool>, "empty_cells_count": <int>}` — `is_completable` is `null` when conflicts are present, since completability is not a meaningful question until they are resolved. `empty_cells` lists every still-empty cell regardless of `has_conflicts`; `empty_cells_count` is `len(empty_cells)`.
 
 ### `validate_full_sudoku_solution`
 
 Checks whether a fully-filled grid is a correct Sudoku solution.
 
 - **Input:** `grid` — expected to have no empty cells.
-- **Output:** `{"is_valid": <bool>, "has_empty_cells": <bool>, "conflicts": [<cell>, ...]}`.
+- **Output:** `{"has_empty_cells": <bool>, "conflicts": [<cell>, ...], "is_valid": <bool>}`.
 
 ### `solve_sudoku_puzzle`
 
