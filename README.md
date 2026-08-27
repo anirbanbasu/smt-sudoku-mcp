@@ -50,12 +50,53 @@ Solves an unsolved grid, or reports why it cannot be solved.
 
 ## Installation
 
-Requires Python 3.13+ and [`uv`](https://docs.astral.sh/uv/).
+Requires Python 3.13+. The package is published on [PyPI](https://pypi.org/project/smt-sudoku-mcp/).
+
+The simplest way to run it is with [`uvx`](https://docs.astral.sh/uv/guides/tools/), which fetches the package into an ephemeral environment on first use and requires no separate install step:
 
 ```bash
-uv sync
-uv run smt-sudoku-mcp
+uvx smt-sudoku-mcp
 ```
+
+Alternatively, install it with `pip` (or `uv pip`) and run the installed console script directly:
+
+```bash
+pip install smt-sudoku-mcp
+smt-sudoku-mcp
+```
+
+To work on the source itself rather than the published package, see [Development](#development) below.
+
+## Using it with an MCP client
+
+This server speaks MCP over `stdio` by default, so any MCP client that can launch a subprocess can use it without further setup. Set `SMT_SUDOKU_MCP_TRANSPORT=streamable-http` instead if the client needs to reach a standalone HTTP service; see [Configuration](#configuration).
+
+### Claude Code
+
+```bash
+claude mcp add smt-sudoku -- uvx smt-sudoku-mcp
+```
+
+### Claude Desktop
+
+Add an entry under Settings → Developer → Edit Config (`claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "smt-sudoku": {
+      "command": "uvx",
+      "args": ["smt-sudoku-mcp"]
+    }
+  }
+}
+```
+
+### Other MCP clients and agent frameworks
+
+Any client that accepts a raw MCP server definition — Cursor, Windsurf, VS Code, or a custom agent built on an MCP SDK — can use the same `command`/`args` pair: `uvx` and `["smt-sudoku-mcp"]`. For `streamable-http`, run the server separately with `SMT_SUDOKU_MCP_TRANSPORT=streamable-http uvx smt-sudoku-mcp` and point the client at `http://<host>:<port>/mcp` rather than giving it a command to launch.
+
+Once connected, an agent can call the four tools above as it would any other tool. For example, asking an agent to "generate a hard Sudoku puzzle, then solve it and check the solution" will chain `generate_sudoku_puzzle`, `solve_sudoku_puzzle`, and `validate_full_sudoku_solution` without further guidance, since each tool's description and schema are sufficient for the agent to plan the sequence itself.
 
 ## Configuration
 
@@ -69,6 +110,13 @@ Environment variables, all optional:
 | `SMT_SUDOKU_MCP_ALLOWED_ORIGINS` | (none) | Comma-separated browser origins to trust, `streamable-http` only |
 
 ## Development
+
+To run the server from a source checkout instead of the published package, use [`uv`](https://docs.astral.sh/uv/):
+
+```bash
+uv sync
+uv run smt-sudoku-mcp
+```
 
 See [AGENTS.md](AGENTS.md) for architecture notes and the full set of development commands (`just -l`).
 
