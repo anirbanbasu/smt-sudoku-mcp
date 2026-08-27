@@ -59,13 +59,19 @@ def run() -> None:
     # FastMCP's own banner with this one, rather than showing both.
     print(LOGO, file=sys.stderr)
     mcp = build_server()
-    if EnvVars.SMT_SUDOKU_MCP_TRANSPORT == "stdio":
-        mcp.run(transport="stdio", show_banner=False)
-    else:
-        mcp.run(
-            transport=EnvVars.SMT_SUDOKU_MCP_TRANSPORT,
-            host=EnvVars.SMT_SUDOKU_MCP_HOST,
-            port=EnvVars.SMT_SUDOKU_MCP_PORT,
-            allowed_origins=EnvVars.SMT_SUDOKU_MCP_ALLOWED_ORIGINS or None,
-            show_banner=False,
-        )
+    try:
+        if EnvVars.SMT_SUDOKU_MCP_TRANSPORT == "stdio":
+            mcp.run(transport="stdio", show_banner=False)
+        else:
+            mcp.run(
+                transport=EnvVars.SMT_SUDOKU_MCP_TRANSPORT,
+                host=EnvVars.SMT_SUDOKU_MCP_HOST,
+                port=EnvVars.SMT_SUDOKU_MCP_PORT,
+                allowed_origins=EnvVars.SMT_SUDOKU_MCP_ALLOWED_ORIGINS or None,
+                show_banner=False,
+            )
+    except KeyboardInterrupt:
+        # mcp.run() already performs its own graceful async shutdown on SIGINT before its
+        # underlying anyio runner re-raises KeyboardInterrupt here - this only stops that
+        # re-raise from printing an unhandled traceback on top of an already-clean shutdown.
+        print("Shutting down.", file=sys.stderr)

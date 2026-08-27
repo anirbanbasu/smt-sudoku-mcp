@@ -44,3 +44,20 @@ def test_run_uses_streamable_http_transport(monkeypatch) -> None:
         allowed_origins=["http://localhost:6274"],
         show_banner=False,
     )
+
+
+def test_run_exits_quietly_on_keyboard_interrupt(monkeypatch, capsys) -> None:
+    """run() should not let KeyboardInterrupt propagate as an unhandled traceback.
+
+    FastMCP's own run() already performs a graceful async shutdown before re-raising
+    KeyboardInterrupt (confirmed by manually sending SIGINT to a running server) - this only
+    needs to stop that re-raise from reaching the top of the process as a raw traceback.
+    """
+    monkeypatch.setattr(EnvVars, "SMT_SUDOKU_MCP_TRANSPORT", "stdio")
+    fake_mcp = MagicMock()
+    fake_mcp.run.side_effect = KeyboardInterrupt
+    monkeypatch.setattr(server_module, "build_server", lambda: fake_mcp)
+
+    server_module.run()  # should return normally, not raise
+
+    assert "shut" in capsys.readouterr().err.lower()

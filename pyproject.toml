@@ -6,7 +6,7 @@ readme = "README.md"
 authors = [
     { name = "Anirban Basu", email = "anirbanbasu@users.noreply.github.com" }
 ]
-requires-python = ">=3.13"
+requires-python = ">=3.13.15"
 dependencies = [
     "environs>=15.1.0",
     "fastmcp==4.0.0b3",
@@ -30,6 +30,12 @@ test = [
     "coverage>=7.15.4",
     "pytest>=9.1.1",
 ]
+
+[tool.uv]
+# The cache and .venv can end up on different filesystems in some environments (e.g. containers),
+# where hardlinking silently falls back to a slower full copy anyway - pin to copy explicitly so
+# `uv sync` doesn't warn about it every time.
+link-mode = "copy"
 
 [tool.ty.rules]
 possibly-unresolved-reference = "warn"
