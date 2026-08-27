@@ -71,6 +71,7 @@ class TestValidatePartial:
         assert result.has_conflicts is False
         assert result.conflicts == []
         assert result.is_completable is True
+        assert len(result.empty_cells) == GRID_SIZE * GRID_SIZE
 
     def test_row_conflict(self) -> None:
         rows = _empty_rows()
@@ -80,6 +81,17 @@ class TestValidatePartial:
         assert result.has_conflicts is True
         assert result.is_completable is None
         assert {(c.row, c.col) for c in result.conflicts} == {(1, 1), (1, 4)}
+        assert (1, 1) not in {(c.row, c.col) for c in result.empty_cells}
+        assert len(result.empty_cells) == GRID_SIZE * GRID_SIZE - 2
+
+    def test_empty_cells_reported_exactly(self) -> None:
+        rows = _full_solution()
+        rows = [row[:] for row in rows]
+        rows[7][0] = EMPTY
+        rows[8][2] = EMPTY
+        result = validate_partial(SudokuGrid(rows=rows))
+        assert {(c.row, c.col) for c in result.empty_cells} == {(8, 1), (9, 3)}
+        assert result.empty_cells_count == 2
 
     def test_column_conflict(self) -> None:
         rows = _empty_rows()
@@ -161,7 +173,7 @@ class TestSolvePuzzle:
 class TestGeneratePuzzle:
     """generate_puzzle's difficulty handling and its uniqueness guarantee."""
 
-    @pytest.mark.parametrize("difficulty", ["easy", "medium", "hard"])
+    @pytest.mark.parametrize("difficulty", ["very easy", "easy", "medium", "hard", "very hard"])
     def test_generates_unique_solvable_puzzle(self, difficulty: str) -> None:
         result = generate_puzzle(difficulty, rng=random.Random(0))  # type: ignore[arg-type]
         assert result.difficulty == difficulty
