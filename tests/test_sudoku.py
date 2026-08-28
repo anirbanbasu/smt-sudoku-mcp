@@ -10,6 +10,7 @@ from smt_sudoku_mcp.sudoku import (
     _DIFFICULTY_TARGET_GIVENS,
     EMPTY,
     GRID_SIZE,
+    Cell,
     SudokuGrid,
     _has_unique_solution,
     _solve,
@@ -99,6 +100,28 @@ class TestSudokuGrid:
         grid = SudokuGrid(rows=_empty_rows())
         with pytest.raises(TypeError):
             grid.rows[0][0] = 5  # ty: ignore[invalid-assignment]
+
+
+class TestCell:
+    """Boundary validation on Cell.row/col, which are grid positions (1-9), not cell values."""
+
+    @pytest.mark.parametrize("row", [1, 9])
+    def test_row_boundaries_accepted(self, row: int) -> None:
+        Cell(row=row, col=1)
+
+    @pytest.mark.parametrize("row", [0, 10])
+    def test_row_out_of_range_rejected(self, row: int) -> None:
+        with pytest.raises(ValidationError):
+            Cell(row=row, col=1)
+
+    @pytest.mark.parametrize("col", [1, 9])
+    def test_col_boundaries_accepted(self, col: int) -> None:
+        Cell(row=1, col=col)
+
+    @pytest.mark.parametrize("col", [0, 10])
+    def test_col_out_of_range_rejected(self, col: int) -> None:
+        with pytest.raises(ValidationError):
+            Cell(row=1, col=col)
 
 
 class TestValidatePartial:

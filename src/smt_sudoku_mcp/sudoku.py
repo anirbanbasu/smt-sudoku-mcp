@@ -57,8 +57,8 @@ class Cell(BaseModel):
     rather than the 0-indexed positions used internally.
     """
 
-    row: int = Field(description="1-indexed row")
-    col: int = Field(description="1-indexed column")
+    row: int = Field(ge=1, le=9, description="1-indexed row")
+    col: int = Field(ge=1, le=9, description="1-indexed column")
 
 
 class GeneratePuzzleResult(BaseModel):
