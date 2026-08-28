@@ -5,10 +5,11 @@ without going through the MCP protocol at all.
 """
 
 import random
+from collections.abc import Sequence
 from typing import Literal
 
 import z3
-from pydantic import BaseModel, Field, computed_field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, computed_field, model_validator
 
 GRID_SIZE = 9
 BOX_SIZE = 3
@@ -32,7 +33,9 @@ _DIFFICULTY_TARGET_GIVENS: dict[DifficultyName, int] = {
 class SudokuGrid(BaseModel):
     """A 9x9 Sudoku grid; 0 marks an empty cell."""
 
-    rows: list[list[int]] = Field(description="9 rows of 9 cells each; 1-9 for a digit, 0 for empty")
+    model_config = ConfigDict(frozen=True)
+
+    rows: tuple[tuple[int, ...], ...] = Field(description="9 rows of 9 cells each; 1-9 for a digit, 0 for empty")
 
     @model_validator(mode="after")
     def _check_shape_and_range(self) -> "SudokuGrid":
@@ -124,7 +127,7 @@ def _all_units() -> list[list[tuple[int, int]]]:
     return rows + cols + boxes
 
 
-def _find_conflicts(rows: list[list[int]]) -> list[Cell]:
+def _find_conflicts(rows: Sequence[Sequence[int]]) -> list[Cell]:
     """Return every cell that shares its non-zero value with another cell in the same row, column, or box."""
     conflicting: set[tuple[int, int]] = set()
     for unit in _all_units():
@@ -141,7 +144,7 @@ def _find_conflicts(rows: list[list[int]]) -> list[Cell]:
     return [Cell(row=r + 1, col=c + 1) for r, c in sorted(conflicting)]
 
 
-def _find_empty_cells(rows: list[list[int]]) -> list[Cell]:
+def _find_empty_cells(rows: Sequence[Sequence[int]]) -> list[Cell]:
     """Return every still-empty cell in the grid."""
     return [Cell(row=r + 1, col=c + 1) for r in range(GRID_SIZE) for c in range(GRID_SIZE) if rows[r][c] == EMPTY]
 
@@ -177,7 +180,7 @@ def _new_solver() -> z3.Solver:
     return z3.SolverFor("QF_FD")
 
 
-def _solve(givens: list[list[int]]) -> list[list[int]] | None:
+def _solve(givens: Sequence[Sequence[int]]) -> list[list[int]] | None:
     """Return a solution consistent with the given fixed cells, or None if none exists."""
     cells, constraints = _build_constraints()
     solver = _new_solver()
@@ -191,7 +194,7 @@ def _solve(givens: list[list[int]]) -> list[list[int]] | None:
     return _model_to_rows(solver.model(), cells)
 
 
-def _has_unique_solution(givens: list[list[int]], known_solution: list[list[int]]) -> bool:
+def _has_unique_solution(givens: Sequence[Sequence[int]], known_solution: Sequence[Sequence[int]]) -> bool:
     """Whether known_solution is the only completion of givens consistent with the Sudoku rules."""
     cells, constraints = _build_constraints()
     solver = _new_solver()

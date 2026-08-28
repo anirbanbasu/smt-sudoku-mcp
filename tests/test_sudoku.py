@@ -62,6 +62,16 @@ class TestSudokuGrid:
         with pytest.raises(ValidationError, match="0-9"):
             SudokuGrid(rows=rows)
 
+    def test_frozen_rejects_field_reassignment(self) -> None:
+        grid = SudokuGrid(rows=_empty_rows())
+        with pytest.raises(ValidationError, match="frozen"):
+            grid.rows = _empty_rows()  # ty: ignore[invalid-assignment]
+
+    def test_rows_are_immutable_tuples(self) -> None:
+        grid = SudokuGrid(rows=_empty_rows())
+        with pytest.raises(TypeError):
+            grid.rows[0][0] = 5  # ty: ignore[invalid-assignment]
+
 
 class TestValidatePartial:
     """validate_partial's conflict detection and completability check."""
