@@ -29,6 +29,24 @@ def mcp():
     return build_server()
 
 
+_CORS_ALLOWED_ORIGIN = "http://localhost:6274"
+
+
+def _cors_app():
+    """A streamable-HTTP ASGI app wrapped in the same CORSMiddleware config as server.run()."""
+    return build_server().http_app(
+        middleware=[
+            Middleware(
+                CORSMiddleware,
+                allow_origins=[_CORS_ALLOWED_ORIGIN],
+                allow_methods=["*"],
+                allow_headers=["*"],
+                expose_headers=["Mcp-Session-Id"],
+            )
+        ]
+    )
+
+
 @pytest.mark.parametrize("difficulty", ["very easy", "easy", "medium", "hard", "very hard"])
 async def test_generate_sudoku_puzzle(mcp, difficulty: str) -> None:
     """generate_sudoku_puzzle should return a puzzle with at least the target number of givens."""
@@ -103,17 +121,7 @@ async def test_cors_exposes_session_id_header() -> None:
     all, so this test pins the client to 2025-06-18 to exercise the code path the header actually
     matters for.
     """
-    app = build_server().http_app(
-        middleware=[
-            Middleware(
-                CORSMiddleware,
-                allow_origins=["http://localhost:6274"],
-                allow_methods=["*"],
-                allow_headers=["*"],
-                expose_headers=["Mcp-Session-Id"],
-            )
-        ]
-    )
+    app = _cors_app()
     async with app.router.lifespan_context(app):
         transport = httpx2.ASGITransport(app=app)
         async with httpx2.AsyncClient(transport=transport, base_url="http://testserver") as client:
@@ -133,8 +141,49 @@ async def test_cors_exposes_session_id_header() -> None:
                     "Accept": "application/json, text/event-stream",
                     "Content-Type": "application/json",
                     "MCP-Protocol-Version": "2025-06-18",
-                    "Origin": "http://localhost:6274",
+                    "Origin": _CORS_ALLOWED_ORIGIN,
                 },
             )
     assert response.headers["mcp-session-id"]
     assert response.headers["access-control-expose-headers"] == "Mcp-Session-Id"
+
+
+async def test_cors_preflight_allowed_origin() -> None:
+    """A preflight OPTIONS request from the configured allowed origin should be approved."""
+    app = _cors_app()
+    async with app.router.lifespan_context(app):
+        transport = httpx2.ASGITransport(app=app)
+        async with httpx2.AsyncClient(transport=transport, base_url="http://testserver") as client:
+            response = await client.options(
+                "/mcp",
+                headers={
+                    "Origin": _CORS_ALLOWED_ORIGIN,
+                    "Access-Control-Request-Method": "POST",
+                    "Access-Control-Request-Headers": "content-type",
+                },
+            )
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == _CORS_ALLOWED_ORIGIN
+
+
+async def test_cors_preflight_disallowed_origin() -> None:
+    """A preflight OPTIONS request from an origin not in allow_origins should be rejected.
+
+    Starlette's CORSMiddleware responds 400 and omits Access-Control-Allow-Origin for a
+    disallowed origin's preflight, which is what stops a browser from letting the follow-up
+    actual request through.
+    """
+    app = _cors_app()
+    async with app.router.lifespan_context(app):
+        transport = httpx2.ASGITransport(app=app)
+        async with httpx2.AsyncClient(transport=transport, base_url="http://testserver") as client:
+            response = await client.options(
+                "/mcp",
+                headers={
+                    "Origin": "http://evil.example",
+                    "Access-Control-Request-Method": "POST",
+                    "Access-Control-Request-Headers": "content-type",
+                },
+            )
+    assert response.status_code == 400
+    assert "access-control-allow-origin" not in response.headers
