@@ -24,7 +24,7 @@ A Sudoku grid is represented as `{"rows": [[...9 ints...], ...9 rows...]}`, wher
 
 Generates a new, uniquely-solvable Sudoku puzzle.
 
-- **Input:** `difficulty` — one of `"very easy"`, `"easy"`, `"medium"`, `"hard"`, or `"very hard"` (default `"medium"`), mapping to an approximate target clue count.
+- **Input:** `difficulty` — one of `"very easy"`, `"easy"`, `"medium"`, `"hard"`, or `"very hard"` (default `"medium"`), mapping to an approximate target clue count: `63`, `51`, `42`, `30`, and `21` respectively. `"very hard"`'s target of `21` sits just above the proven minimum of 17 givens for any uniquely-solvable Sudoku puzzle, so in practice it commonly lands noticeably above 21 (e.g. mid-20s), since removal stops once no further cell can be cleared without breaking uniqueness.
 - **Output:** `{"puzzle": <grid>, "difficulty": <str>, "givens": <int>}` — `givens` is the actual number of filled cells, which may be slightly above the target if removing further cells would have broken uniqueness.
 
 ### `validate_partial_sudoku_solution`
