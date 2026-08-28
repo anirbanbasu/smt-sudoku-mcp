@@ -7,6 +7,8 @@ the env-var-to-transport wiring is correct.
 
 from unittest.mock import MagicMock
 
+from starlette.middleware.cors import CORSMiddleware
+
 import smt_sudoku_mcp
 from smt_sudoku_mcp import EnvVars, server as server_module
 
@@ -29,7 +31,7 @@ def test_run_uses_stdio_transport(monkeypatch) -> None:
 
 
 def test_run_uses_streamable_http_transport(monkeypatch) -> None:
-    """run() should forward host/port/allowed_origins when configured for streamable-http."""
+    """run() should forward host/port/allowed_origins, plus a CORSMiddleware, for streamable-http."""
     monkeypatch.setattr(EnvVars, "SMT_SUDOKU_MCP_TRANSPORT", "streamable-http")
     monkeypatch.setattr(EnvVars, "SMT_SUDOKU_MCP_HOST", "0.0.0.0")
     monkeypatch.setattr(EnvVars, "SMT_SUDOKU_MCP_PORT", 9000)
@@ -37,13 +39,24 @@ def test_run_uses_streamable_http_transport(monkeypatch) -> None:
     fake_mcp = MagicMock()
     monkeypatch.setattr(server_module, "build_server", lambda: fake_mcp)
     server_module.run()
-    fake_mcp.run.assert_called_once_with(
-        transport="streamable-http",
-        host="0.0.0.0",
-        port=9000,
-        allowed_origins=["http://localhost:6274"],
-        show_banner=False,
-    )
+
+    call_kwargs = fake_mcp.run.call_args.kwargs
+    middleware = call_kwargs.pop("middleware")
+    assert call_kwargs == {
+        "transport": "streamable-http",
+        "host": "0.0.0.0",
+        "port": 9000,
+        "allowed_origins": ["http://localhost:6274"],
+        "show_banner": False,
+    }
+    assert len(middleware) == 1
+    cors_cls, _cors_args, cors_kwargs = middleware[0]
+    assert cors_cls is CORSMiddleware
+    assert cors_kwargs == {
+        "allow_origins": ["http://localhost:6274"],
+        "allow_methods": ["*"],
+        "allow_headers": ["*"],
+    }
 
 
 def test_run_exits_quietly_on_keyboard_interrupt(monkeypatch, capsys) -> None:

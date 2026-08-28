@@ -3,6 +3,8 @@
 import sys
 
 from fastmcp import FastMCP
+from starlette.middleware import Middleware
+from starlette.middleware.cors import CORSMiddleware
 
 from smt_sudoku_mcp import PACKAGE_NAME, EnvVars
 from smt_sudoku_mcp.sudoku import (
@@ -63,11 +65,23 @@ def run() -> None:
         if EnvVars.SMT_SUDOKU_MCP_TRANSPORT == "stdio":
             mcp.run(transport="stdio", show_banner=False)
         else:
+            # allowed_origins/host_origin_protection is a server-side request guard against
+            # spoofed Origin/Host headers - it is not CORS and never emits
+            # Access-Control-Allow-Origin, so browser JS cannot read cross-origin responses
+            # without CORSMiddleware added explicitly below.
             mcp.run(
                 transport=EnvVars.SMT_SUDOKU_MCP_TRANSPORT,
                 host=EnvVars.SMT_SUDOKU_MCP_HOST,
                 port=EnvVars.SMT_SUDOKU_MCP_PORT,
                 allowed_origins=EnvVars.SMT_SUDOKU_MCP_ALLOWED_ORIGINS or None,
+                middleware=[
+                    Middleware(
+                        CORSMiddleware,
+                        allow_origins=EnvVars.SMT_SUDOKU_MCP_ALLOWED_ORIGINS,
+                        allow_methods=["*"],
+                        allow_headers=["*"],
+                    )
+                ],
                 show_banner=False,
             )
     except KeyboardInterrupt:
