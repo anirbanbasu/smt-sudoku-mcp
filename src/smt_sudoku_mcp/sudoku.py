@@ -137,6 +137,9 @@ def _find_conflicts(rows: Sequence[Sequence[int]]) -> list[Cell]:
             if value == EMPTY:
                 continue
             if value in seen:
+                # seen[value] is deliberately left pointing at the first occurrence, not advanced
+                # to (r, c): this is what makes a 3+-way duplicate (e.g. the same value at A, B, C)
+                # all get flagged against the same anchor A, rather than only the first pair.
                 conflicting.add(seen[value])
                 conflicting.add((r, c))
             else:

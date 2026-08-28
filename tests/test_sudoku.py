@@ -175,6 +175,27 @@ class TestValidatePartial:
         assert result.has_conflicts is False
         assert result.is_completable is False
 
+    def test_triple_duplicate_in_one_unit(self) -> None:
+        # Three cells sharing a value within a single row: seen[5] anchors on the first occurrence
+        # and is never advanced, so both later duplicates get flagged against that same anchor.
+        rows = _empty_rows()
+        rows[0][0] = 5
+        rows[0][3] = 5
+        rows[0][6] = 5
+        result = validate_partial(SudokuGrid(rows=rows))
+        assert {(c.row, c.col) for c in result.conflicts} == {(1, 1), (1, 4), (1, 7)}
+
+    def test_cell_conflicting_across_multiple_units(self) -> None:
+        # Cell (0, 0) conflicts via its row (with (0, 3)) and, separately, via its column (with
+        # (3, 0)): each unit's `seen` dict is independent, so this must not corrupt either
+        # detection, and (0, 0) itself must appear only once in the deduplicated result.
+        rows = _empty_rows()
+        rows[0][0] = 5
+        rows[0][3] = 5
+        rows[3][0] = 5
+        result = validate_partial(SudokuGrid(rows=rows))
+        assert {(c.row, c.col) for c in result.conflicts} == {(1, 1), (1, 4), (4, 1)}
+
 
 class TestValidateFull:
     """validate_full's checks for emptiness and rule conflicts."""
