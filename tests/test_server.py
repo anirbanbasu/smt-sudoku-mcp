@@ -11,7 +11,7 @@ import pytest
 from fastmcp import Client
 
 from smt_sudoku_mcp.server import build_server
-from smt_sudoku_mcp.sudoku import EMPTY, GRID_SIZE
+from smt_sudoku_mcp.sudoku import _DIFFICULTY_TARGET_GIVENS, EMPTY, GRID_SIZE
 
 pytestmark = pytest.mark.anyio
 
@@ -26,13 +26,14 @@ def mcp():
     return build_server()
 
 
-async def test_generate_sudoku_puzzle(mcp) -> None:
-    """generate_sudoku_puzzle should return a puzzle with roughly the requested number of givens."""
+@pytest.mark.parametrize("difficulty", ["very easy", "easy", "medium", "hard", "very hard"])
+async def test_generate_sudoku_puzzle(mcp, difficulty: str) -> None:
+    """generate_sudoku_puzzle should return a puzzle with at least the target number of givens."""
     async with Client(mcp) as client:
-        result = await client.call_tool("generate_sudoku_puzzle", {"difficulty": "easy"})
+        result = await client.call_tool("generate_sudoku_puzzle", {"difficulty": difficulty})
     content = result.structured_content
-    assert content["difficulty"] == "easy"
-    assert content["givens"] >= 40
+    assert content["difficulty"] == difficulty
+    assert content["givens"] >= _DIFFICULTY_TARGET_GIVENS[difficulty]
     assert len(content["puzzle"]["rows"]) == GRID_SIZE
 
 
