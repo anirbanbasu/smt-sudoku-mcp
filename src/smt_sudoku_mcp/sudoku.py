@@ -180,6 +180,19 @@ def _new_solver() -> z3.Solver:
     return z3.SolverFor("QF_FD")
 
 
+def _check(solver: z3.Solver) -> bool:
+    """Run solver.check(), returning whether it is sat and raising on a genuine z3.unknown result.
+
+    z3.unknown (the solver gave up, e.g. due to a timeout or resource limit) is not the same as
+    z3.unsat (proven no solution exists) and must never be folded into it - conflating the two
+    would misreport "the solver couldn't decide" as "this puzzle has no solution."
+    """
+    result = solver.check()
+    if result == z3.unknown:
+        raise RuntimeError(f"Z3 solver returned unknown: {solver.reason_unknown()}")
+    return result == z3.sat
+
+
 def _solve(givens: Sequence[Sequence[int]]) -> list[list[int]] | None:
     """Return a solution consistent with the given fixed cells, or None if none exists."""
     cells, constraints = _build_constraints()
@@ -189,7 +202,7 @@ def _solve(givens: Sequence[Sequence[int]]) -> list[list[int]] | None:
         for c in range(GRID_SIZE):
             if givens[r][c] != EMPTY:
                 solver.add(cells[r][c] == givens[r][c])
-    if solver.check() != z3.sat:
+    if not _check(solver):
         return None
     return _model_to_rows(solver.model(), cells)
 
@@ -205,7 +218,7 @@ def _has_unique_solution(givens: Sequence[Sequence[int]], known_solution: Sequen
                 solver.add(cells[r][c] == givens[r][c])
     # SAT here means a *different* completion exists, since the known solution itself is forbidden.
     solver.add(z3.Or([cells[r][c] != known_solution[r][c] for r in range(GRID_SIZE) for c in range(GRID_SIZE)]))
-    return solver.check() == z3.unsat
+    return not _check(solver)
 
 
 def generate_puzzle(difficulty: DifficultyName = "medium", *, rng: random.Random | None = None) -> GeneratePuzzleResult:

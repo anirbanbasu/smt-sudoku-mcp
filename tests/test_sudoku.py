@@ -3,6 +3,7 @@
 import random
 
 import pytest
+import z3
 from pydantic import ValidationError
 
 from smt_sudoku_mcp.sudoku import (
@@ -38,6 +39,33 @@ _UNSATISFIABLE_CONFLICT_FREE_ROWS = [
     [8, 9, 0, 0, 0, 5, 0, 0, 0],
     *([0] * GRID_SIZE for _ in range(6)),
 ]
+
+
+class _UnknownSolver:
+    """Stand-in for z3.Solver whose check() always reports z3.unknown, e.g. as if it timed out."""
+
+    def add(self, *args: object, **kwargs: object) -> None:
+        pass
+
+    def check(self) -> z3.CheckSatResult:
+        return z3.unknown
+
+    def reason_unknown(self) -> str:
+        return "test-induced timeout"
+
+
+class TestSolverUnknown:
+    """_solve and _has_unique_solution must raise, not silently treat z3.unknown as no-solution."""
+
+    def test_solve_raises_on_unknown(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr("smt_sudoku_mcp.sudoku._new_solver", lambda: _UnknownSolver())
+        with pytest.raises(RuntimeError, match="unknown"):
+            _solve(_empty_rows())
+
+    def test_has_unique_solution_raises_on_unknown(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr("smt_sudoku_mcp.sudoku._new_solver", lambda: _UnknownSolver())
+        with pytest.raises(RuntimeError, match="unknown"):
+            _has_unique_solution(_empty_rows(), _full_solution())
 
 
 class TestSudokuGrid:
