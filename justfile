@@ -34,6 +34,12 @@ bump-patch:
     @uv version --bump patch
     @echo "Updated project to: $(uv version --short)"
 
+# Bump the minor version of the project using 'uv'
+bump-minor:
+    @echo "Updating current project version: $(uv version --short)"
+    @uv version --bump minor
+    @echo "Updated project to: $(uv version --short)"
+
 # Format the code
 format:
     @echo "Formatting code..."

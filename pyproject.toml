@@ -1,6 +1,6 @@
 [project]
 name = "smt-sudoku-mcp"
-version = "0.2.0"
+version = "0.3.0"
 description = "An MCP server to work with Sudoku puzzles using satisfiability modulo theories (SMT)"
 license = "MIT"
 license-files = ["LICEN[CS]E*"]
