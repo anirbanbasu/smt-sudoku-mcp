@@ -224,6 +224,32 @@ def _has_unique_solution(givens: Sequence[Sequence[int]], known_solution: Sequen
     return not _check(solver)
 
 
+def _has_unique_solution_scoped(
+    solver: z3.Solver,
+    cells: list[list[z3.ArithRef]],
+    givens: Sequence[Sequence[int]],
+    known_solution: Sequence[Sequence[int]],
+) -> bool:
+    """Like _has_unique_solution, but against a solver/cells the caller already built.
+
+    For generate_puzzle's removal loop, which calls this up to ~60 times per puzzle: rebuilding
+    the 81 domain constraints and 27 Distinct constraints from scratch on every call (as
+    _has_unique_solution does for its other, single-shot callers) measurably dominated generation
+    latency. Here the base Sudoku-rules constraints are added to `solver` exactly once by the
+    caller; each call only needs to push/pop its own attempt's givens and uniqueness negation.
+    """
+    solver.push()
+    try:
+        for r in range(GRID_SIZE):
+            for c in range(GRID_SIZE):
+                if givens[r][c] != EMPTY:
+                    solver.add(cells[r][c] == givens[r][c])
+        solver.add(z3.Or([cells[r][c] != known_solution[r][c] for r in range(GRID_SIZE) for c in range(GRID_SIZE)]))
+        return not _check(solver)
+    finally:
+        solver.pop()
+
+
 def generate_puzzle(difficulty: DifficultyName = "medium", *, rng: random.Random | None = None) -> GeneratePuzzleResult:
     """Generate a new, uniquely-solvable Sudoku puzzle at the given difficulty.
 
@@ -243,13 +269,17 @@ def generate_puzzle(difficulty: DifficultyName = "medium", *, rng: random.Random
     cell_order = [(r, c) for r in range(GRID_SIZE) for c in range(GRID_SIZE)]
     rng.shuffle(cell_order)
 
+    cells, constraints = _build_constraints()
+    solver = _new_solver()
+    solver.add(*constraints)
+
     givens_remaining = GRID_SIZE * GRID_SIZE
     for r, c in cell_order:
         if givens_remaining <= target_givens:
             break
         removed_value = puzzle[r][c]
         puzzle[r][c] = EMPTY
-        if _has_unique_solution(puzzle, full_solution):
+        if _has_unique_solution_scoped(solver, cells, puzzle, full_solution):
             givens_remaining -= 1
         else:
             puzzle[r][c] = removed_value
