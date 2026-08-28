@@ -42,6 +42,7 @@ dev = [
 ]
 test = [
     "coverage>=7.15.4",
+    "httpx2>=2.12.0",
     "pytest>=9.1.1",
 ]
 

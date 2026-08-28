@@ -9,7 +9,7 @@ from collections.abc import Sequence
 from typing import Literal
 
 import z3
-from pydantic import BaseModel, ConfigDict, Field, computed_field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, StrictInt, computed_field, model_validator
 
 GRID_SIZE = 9
 BOX_SIZE = 3
@@ -35,7 +35,7 @@ class SudokuGrid(BaseModel):
 
     model_config = ConfigDict(frozen=True)
 
-    rows: tuple[tuple[int, ...], ...] = Field(description="9 rows of 9 cells each; 1-9 for a digit, 0 for empty")
+    rows: tuple[tuple[StrictInt, ...], ...] = Field(description="9 rows of 9 cells each; 1-9 for a digit, 0 for empty")
 
     @model_validator(mode="after")
     def _check_shape_and_range(self) -> "SudokuGrid":

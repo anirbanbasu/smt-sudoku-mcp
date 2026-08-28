@@ -57,6 +57,7 @@ def test_run_uses_streamable_http_transport(monkeypatch) -> None:
         "allow_origins": ["http://localhost:6274"],
         "allow_methods": ["*"],
         "allow_headers": ["*"],
+        "expose_headers": ["Mcp-Session-Id"],
     }
 
 

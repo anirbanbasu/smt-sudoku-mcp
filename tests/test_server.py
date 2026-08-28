@@ -7,8 +7,11 @@ test_sudoku.py. Assertions read `result.structured_content` (a plain dict) rathe
 assertions simple.
 """
 
+import httpx2
 import pytest
 from fastmcp import Client
+from starlette.middleware import Middleware
+from starlette.middleware.cors import CORSMiddleware
 
 from smt_sudoku_mcp.server import build_server
 from smt_sudoku_mcp.sudoku import _DIFFICULTY_TARGET_GIVENS, EMPTY, GRID_SIZE
@@ -81,3 +84,57 @@ async def test_solve_sudoku_puzzle_conflicting_givens(mcp) -> None:
     content = result.structured_content
     assert content["status"] == "conflicting_givens"
     assert content["solution"] is None
+
+
+async def test_cors_exposes_session_id_header() -> None:
+    """The CORS middleware run() attaches must expose Mcp-Session-Id to browser JS.
+
+    Browsers only grant JS access to response headers listed in Access-Control-Expose-Headers;
+    Mcp-Session-Id isn't one of the handful of headers exposed by default. Without explicitly
+    exposing it, a browser-based client can't read the session id off the initialize response to
+    echo back on later requests, and those later requests then fail with 400 Missing session ID.
+
+    This drives real HTTP through the CORS middleware and asserts on actual response headers,
+    rather than mocking FastMCP.run() the way test_entrypoints.py does - the bug is in what the
+    middleware stack puts on the wire, which a mocked run() call can't observe.
+
+    Session ids are only assigned by the legacy (2025-06-18) streamable-HTTP handshake; the
+    2026-07-28 protocol this project otherwise negotiates by default has no session concept at
+    all, so this test pins the client to 2025-06-18 to exercise the code path the header actually
+    matters for.
+    """
+    app = build_server().http_app(
+        middleware=[
+            Middleware(
+                CORSMiddleware,
+                allow_origins=["http://localhost:6274"],
+                allow_methods=["*"],
+                allow_headers=["*"],
+                expose_headers=["Mcp-Session-Id"],
+            )
+        ]
+    )
+    async with app.router.lifespan_context(app):
+        transport = httpx2.ASGITransport(app=app)
+        async with httpx2.AsyncClient(transport=transport, base_url="http://testserver") as client:
+            response = await client.post(
+                "/mcp",
+                json={
+                    "jsonrpc": "2.0",
+                    "id": 1,
+                    "method": "initialize",
+                    "params": {
+                        "protocolVersion": "2025-06-18",
+                        "capabilities": {},
+                        "clientInfo": {"name": "test", "version": "1.0"},
+                    },
+                },
+                headers={
+                    "Accept": "application/json, text/event-stream",
+                    "Content-Type": "application/json",
+                    "MCP-Protocol-Version": "2025-06-18",
+                    "Origin": "http://localhost:6274",
+                },
+            )
+    assert response.headers["mcp-session-id"]
+    assert response.headers["access-control-expose-headers"] == "Mcp-Session-Id"

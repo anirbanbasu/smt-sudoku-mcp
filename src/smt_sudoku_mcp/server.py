@@ -81,6 +81,10 @@ def run() -> None:
                         allow_origins=EnvVars.SMT_SUDOKU_MCP_ALLOWED_ORIGINS,
                         allow_methods=["*"],
                         allow_headers=["*"],
+                        # Streamable HTTP returns the session ID as a response header on
+                        # initialization; without exposing it, browser JS can't read it to send
+                        # back on subsequent requests, which then fail with 400 Missing session ID.
+                        expose_headers=["Mcp-Session-Id"],
                     )
                 ],
                 show_banner=False,
