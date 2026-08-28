@@ -262,7 +262,11 @@ def generate_puzzle(difficulty: DifficultyName = "medium", *, rng: random.Random
     """
     rng = rng or random.Random()
     full_solution = _solve([[EMPTY] * GRID_SIZE for _ in range(GRID_SIZE)])
-    assert full_solution is not None  # the empty grid is always satisfiable
+    if full_solution is None:
+        # The empty grid is always satisfiable given a correct Sudoku-rules encoding, so this is
+        # unreachable in practice. Raised explicitly rather than asserted so the invariant still
+        # holds under -O/PYTHONOPTIMIZE, which strips assert statements.
+        raise RuntimeError("the empty grid is always satisfiable")  # pragma: no cover
 
     puzzle = [row[:] for row in full_solution]
     target_givens = _DIFFICULTY_TARGET_GIVENS[difficulty]
