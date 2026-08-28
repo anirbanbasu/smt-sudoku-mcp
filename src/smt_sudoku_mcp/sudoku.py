@@ -209,7 +209,15 @@ def _has_unique_solution(givens: Sequence[Sequence[int]], known_solution: Sequen
 
 
 def generate_puzzle(difficulty: DifficultyName = "medium", *, rng: random.Random | None = None) -> GeneratePuzzleResult:
-    """Generate a new, uniquely-solvable Sudoku puzzle at the given difficulty."""
+    """Generate a new, uniquely-solvable Sudoku puzzle at the given difficulty.
+
+    Args:
+        difficulty: Target clue count bracket; see `_DIFFICULTY_TARGET_GIVENS`.
+        rng: Controls only the order in which cells are considered for removal. It does not make
+            the resulting puzzle reproducible: the starting full solution comes from Z3 via
+            `_solve`, and Z3's choice of model for an under-constrained problem isn't seeded by
+            this parameter, so the same `rng` seed does not yield the same puzzle across calls.
+    """
     rng = rng or random.Random()
     full_solution = _solve([[EMPTY] * GRID_SIZE for _ in range(GRID_SIZE)])
     assert full_solution is not None  # the empty grid is always satisfiable
