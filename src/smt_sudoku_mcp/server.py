@@ -74,6 +74,7 @@ def run() -> None:
                 host=EnvVars.SMT_SUDOKU_MCP_HOST,
                 port=EnvVars.SMT_SUDOKU_MCP_PORT,
                 allowed_origins=EnvVars.SMT_SUDOKU_MCP_ALLOWED_ORIGINS or None,
+                host_origin_protection="auto",
                 middleware=[
                     Middleware(
                         CORSMiddleware,

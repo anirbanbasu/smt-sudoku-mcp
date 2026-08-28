@@ -47,6 +47,7 @@ def test_run_uses_streamable_http_transport(monkeypatch) -> None:
         "host": "0.0.0.0",
         "port": 9000,
         "allowed_origins": ["http://localhost:6274"],
+        "host_origin_protection": "auto",
         "show_banner": False,
     }
     assert len(middleware) == 1
