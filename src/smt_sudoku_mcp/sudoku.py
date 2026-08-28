@@ -122,7 +122,7 @@ def _all_units() -> list[list[tuple[int, int]]]:
     Every cell belongs to exactly three units: one row, one column, and one box.
     """
     rows = [[(r, c) for c in range(GRID_SIZE)] for r in range(GRID_SIZE)]
-    cols = [[(r, c) for r in range(GRID_SIZE)] for c in range(GRID_SIZE)]
+    cols = [[(r, col) for r in range(GRID_SIZE)] for col in range(GRID_SIZE)]
     boxes = [_box_cells(box_row, box_col) for box_row in range(BOX_SIZE) for box_col in range(BOX_SIZE)]
     return rows + cols + boxes
 
