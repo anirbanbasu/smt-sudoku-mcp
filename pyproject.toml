@@ -18,7 +18,7 @@ classifiers = [
 ]
 dependencies = [
     "environs>=15.1.0",
-    "fastmcp==4.0.0b3",
+    "fastmcp==4.0.0b5",
     "z3-solver>=5.1.0.0",
 ]
 
