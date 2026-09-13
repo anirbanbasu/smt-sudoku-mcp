@@ -36,12 +36,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 - `py.typed` marker and a `Typing :: Typed` classifier, so type checkers treat the package as typed when installed as a dependency.
 - `CHANGELOG.md`, `SECURITY.md`, `CONTRIBUTING.md`, and `CONTRIBUTORS.md`.
+- `.github/workflows/dco.yml`, enforcing Developer Certificate of Origin sign-off on pull requests via `KineticCafe/actions-dco`.
+- `assets/logo.svg`, an SVG rendering of the terminal logo with a dark/light-mode-adaptive backdrop, used in the README in place of the ASCII art fenced code block (which rendered with an unwanted "copy" button).
 
 ### Changed
 
 - **Development status promoted to GA:** `Development Status :: 5 - Production/Stable` (from `4 - Beta`). The four tools' input/output schemas are now treated as a stable public contract; breaking changes to them will be called out explicitly in this file and reflected in a major version bump.
 - Upgraded `fastmcp` to `>=4.0.3`, the first non-beta release of the FastMCP 4 line (previously pinned to the beta `4.0.0b3`); see [AGENTS.md](AGENTS.md) for the updated pinning rationale.
 - README now states explicitly that the server has no built-in authentication or authorization and is intended for local or otherwise trusted-network deployment only, rather than leaving this implicit.
+- `CONTRIBUTING.md`'s DCO section now states sign-off is required and enforced by `dco.yml`, rather than merely encouraged.
 
 ### Deprecated
 
