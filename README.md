@@ -1,10 +1,8 @@
 [![Python 3.13+](https://img.shields.io/badge/python-3.13+-blue?logo=python&logoColor=3776ab&labelColor=e4e4e4)](https://www.python.org/downloads/release/python-3130/) [![pytest](https://github.com/anirbanbasu/smt-sudoku-mcp/actions/workflows/uv-pytest-coverage.yml/badge.svg)](https://github.com/anirbanbasu/smt-sudoku-mcp/actions/workflows/uv-pytest-coverage.yml) [![PyPI](https://img.shields.io/pypi/v/smt-sudoku-mcp?label=pypi%20package)](https://pypi.org/project/smt-sudoku-mcp/#history) ![GitHub commits since latest release](https://img.shields.io/github/commits-since/anirbanbasu/smt-sudoku-mcp/latest) [![CodeQL Advanced](https://github.com/anirbanbasu/smt-sudoku-mcp/actions/workflows/codeql.yml/badge.svg)](https://github.com/anirbanbasu/smt-sudoku-mcp/actions/workflows/codeql.yml) [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/anirbanbasu/smt-sudoku-mcp/badge)](https://scorecard.dev/viewer/?uri=github.com/anirbanbasu/smt-sudoku-mcp) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-```
-╭─╮╭┬╮╶┬╴   ╭─╮╷ ╷╶┬╮╭─╮╷╭ ╷ ╷
-╰─╮│││ │    ╰─╮│ │ │││ │├┴╮│ │
-╰─╯╵ ╵ ╵    ╰─╯╰─╯╶┴╯╰─╯╵ ╵╰─╯
-```
+<p align="center">
+  <img width="248" height="96" src="https://raw.githubusercontent.com/anirbanbasu/smt-sudoku-mcp/master/assets/logo.svg" alt="smt-sudoku-mcp logo">
+</p>
 
 # smt-sudoku-mcp
 
@@ -13,6 +11,8 @@ _Now, your agents can play Sudoku confidently!_
 An MCP server that demonstrates the power of satisfiability modulo theories (SMT) solving, using [Z3](https://github.com/Z3Prover/z3), through the classic constraint-satisfaction puzzle of Sudoku.
 
 Sudoku maps cleanly onto SMT primitives: generating a puzzle means finding a model that satisfies the Sudoku constraints and then proving a reduced set of clues still has only one solution; validating a grid means checking those same constraints against given cell values; solving a puzzle means finding a model or proving none exists.
+
+As of `1.0.0`, the four tools' input/output schemas below are a stable public contract: any breaking change to them will be called out explicitly in [CHANGELOG.md](CHANGELOG.md) and reflected in a major version bump.
 
 ## Tools
 
@@ -109,6 +109,8 @@ Environment variables, all optional:
 | `SMT_SUDOKU_MCP_PORT` | `8000` | Bind port, `streamable-http` only |
 | `SMT_SUDOKU_MCP_ALLOWED_ORIGINS` | (none) | Comma-separated browser origins to trust, `streamable-http` only |
 
+The server has no built-in authentication or authorization of its own: `SMT_SUDOKU_MCP_ALLOWED_ORIGINS` and the request guard it feeds protect against spoofed browser origins and DNS-rebinding-style attacks, not against an arbitrary network client calling its tools. There is no scope for adding authentication — this server is intended to be run on a local machine or an otherwise trusted network, never exposed directly to an untrusted network.
+
 ## Development
 
 To run the server from a source checkout instead of the published package, use [`uv`](https://docs.astral.sh/uv/):
@@ -122,7 +124,11 @@ See [AGENTS.md](AGENTS.md) for architecture notes and the full set of developmen
 
 ## Contributing
 
-Issues and pull requests are welcome.
+Issues and pull requests are welcome; see [CONTRIBUTING.md](CONTRIBUTING.md). See [CONTRIBUTORS.md](CONTRIBUTORS.md) for the list of contributors, and [CHANGELOG.md](CHANGELOG.md) for the release history.
+
+## Security
+
+See [SECURITY.md](SECURITY.md) for the vulnerability disclosure policy.
 
 ## License
 

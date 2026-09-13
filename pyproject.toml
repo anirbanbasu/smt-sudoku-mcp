@@ -1,6 +1,6 @@
 [project]
 name = "smt-sudoku-mcp"
-version = "0.3.0"
+version = "1.0.0"
 description = "An MCP server to work with Sudoku puzzles using satisfiability modulo theories (SMT)"
 license = "MIT"
 license-files = ["LICEN[CS]E*"]
@@ -10,15 +10,16 @@ authors = [
 ]
 requires-python = ">=3.13.15"
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
     "Intended Audience :: Education",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.13",
+    "Typing :: Typed",
 ]
 dependencies = [
     "environs>=15.1.0",
-    "fastmcp==4.0.0b3",
+    "fastmcp>=4.0.3",
     "z3-solver>=5.1.0.0",
 ]
 
