@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="96" width="248" viewBox="0 0 248 96" class="aasvg">
+<style>
+.aasvg { --aasvg-b: light-dark(black, white); --aasvg-w: light-dark(white, black);
+* { fill: none; stroke: var(--aasvg-b); stroke-linecap: round; }
+.dashed { stroke-dasharray: 3,6; }
+text { font: 13px monospace; text-anchor: middle; fill: var(--aasvg-b); stroke: none; }
+text.b { font-weight: 700; }
+text.i { font-style: italic; }
+.backdrop { fill: var(--aasvg-w); stroke: none; opacity: 0.4; }
+}
+</style>
+<text class="ascii" display="none"><![CDATA[
+
+╭─╮╭┬╮╶┬╴   ╭─╮╷ ╷╶┬╮╭─╮╷╭ ╷ ╷
+╰─╮│││ │    ╰─╮│ │ │││ │├┴╮│ │
+╰─╯╵ ╵ ╵    ╰─╯╰─╯╶┴╯╰─╯╵ ╵╰─╯
+
+]]></text>
+<rect class="backdrop" x="0" y="0" width="248" height="96" rx="3px" ry="3px"/>
+<g class="text">
+<text x="40" y="36">╭─╮╭┬╮╶┬╴</text>
+<text x="172" y="36">╭─╮╷ ╷╶┬╮╭─╮╷╭ ╷ ╷</text>
+<text x="36" y="52">╰─╮│││ │</text>
+<text x="172" y="52">╰─╮│ │ │││ │├┴╮│ │</text>
+<text x="36" y="68">╰─╯╵ ╵ ╵</text>
+<text x="172" y="68">╰─╯╰─╯╶┴╯╰─╯╵ ╵╰─╯</text>
+</g>
+</svg>
