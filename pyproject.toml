@@ -32,7 +32,7 @@ Download = "https://pypi.org/project/smt-sudoku-mcp/"
 smt-sudoku-mcp = "smt_sudoku_mcp:main"
 
 [build-system]
-requires = ["uv_build>=0.12.5,<0.13.0"]
+requires = ["uv_build>=0.12.5,<0.14.0"]
 build-backend = "uv_build"
 
 [dependency-groups]
